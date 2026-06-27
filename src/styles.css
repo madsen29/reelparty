@@ -867,14 +867,34 @@ body {
     opacity: 1;
   }
 }
+.rp-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+}
 .rp-activity-row {
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--rp-surface);
   border: 2px solid var(--rp-border);
-  padding: 6px 10px 6px 6px;
-  border-radius: 14px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 12px;
+}
+.rp-activity-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.rp-activity-name-text {
+  font-weight: 800;
+  font-size: 14;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rp-activity-tags {
   display: flex;
@@ -887,10 +907,6 @@ body {
   font-weight: 800;
   padding: 3px 7px;
   border-radius: 8px;
-}
-.rp-activity-tag--watched {
-  background: rgba(88, 204, 2, 0.15);
-  color: var(--rp-accent-green);
 }
 .rp-activity-tag--react {
   background: var(--rp-surface-2);

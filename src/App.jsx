@@ -2231,14 +2231,7 @@ export default function App() {
               <ReactionChips reactions={viewersVideo.reactions} />
             </div>
           )}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              marginTop: 16,
-            }}
-          >
+          <div className="rp-activity-list">
             {activityFor(viewersVideo).length === 0 ? (
               <p
                 className="rp-muted"
@@ -2250,28 +2243,15 @@ export default function App() {
               activityFor(viewersVideo).map((w) => (
                 <div key={w.id} className="rp-activity-row">
                   <Avatar id={w.id} name={w.name} sm />
-                  <span
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 14,
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {memberLabel(w)}
-                  </span>
-                  {w.id === party?.hostId && (
-                    <Crown size={13} color="#FFC800" fill="#FFC800" />
-                  )}
-                  <div className="rp-activity-tags">
-                    {w.watched && (
-                      <span className="rp-activity-tag rp-activity-tag--watched">
-                        Watched
-                      </span>
+                  <div className="rp-activity-name">
+                    <span className="rp-activity-name-text">
+                      {memberLabel(w)}
+                    </span>
+                    {w.id === party?.hostId && (
+                      <Crown size={13} color="#FFC800" fill="#FFC800" />
                     )}
+                  </div>
+                  <div className="rp-activity-tags">
                     {w.reaction && (
                       <span className="rp-activity-tag rp-activity-tag--react">
                         {w.reaction}
