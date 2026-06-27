@@ -747,6 +747,7 @@ export default function App() {
   const localReactionAtRef = useRef({});
   const clipboardReadRef = useRef(null);
   const pendingShareHandledRef = useRef(false);
+  const partySnapshotRef = useRef("");
 
   const isHost = party?.hostId === me;
   const fireConfetti = () => {
@@ -757,6 +758,36 @@ export default function App() {
     setToast(m);
     setTimeout(() => setToast(""), 2200);
   };
+
+  const refreshParty = useCallback(async () => {
+    if (!code) return null;
+    try {
+      const [p, mem, q] = await Promise.all([
+        api.getParty(code),
+        api.getMembers(code),
+        api.getQueue(code),
+      ]);
+      if (!p || !mem.some((m) => m.id === me)) {
+        partySnapshotRef.current = "";
+        if (p && !mem.some((m) => m.id === me)) {
+          showToast("You were removed from the party");
+        }
+        saveSession(null);
+        setScreen("home");
+        setParty(null);
+        setCode("");
+        return null;
+      }
+      const snapshot = JSON.stringify({ p, mem, q });
+      if (snapshot !== partySnapshotRef.current) {
+        partySnapshotRef.current = snapshot;
+        setParty({ ...p, members: mem, queue: q });
+      }
+      return { p, members: mem, queue: q };
+    } catch {
+      return null;
+    }
+  }, [code, me]);
 
   const completeReactionBurst = useCallback((videoId, burstId) => {
     setActiveReactionBursts((active) => {
@@ -944,32 +975,23 @@ export default function App() {
 
   useEffect(() => {
     if (!code || screen !== "party") return;
-    let alive = true;
-    const refresh = async () => {
-      const [p, mem, q] = await Promise.all([
-        api.getParty(code),
-        api.getMembers(code),
-        api.getQueue(code),
-      ]);
-      if (!alive) return;
-      if (!p || !mem.some((m) => m.id === me)) {
-        saveSession(null);
-        setScreen("home");
-        setParty(null);
-        setCode("");
-        if (p && !mem.some((m) => m.id === me))
-          showToast("You were removed from the party");
-        return;
-      }
-      setParty({ ...p, members: mem, queue: q });
+    void refreshParty();
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") void refreshParty();
+    }, 2000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshParty();
     };
-    refresh();
-    const poll = setInterval(refresh, 2000);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      alive = false;
       clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [code, screen]);
+  }, [code, screen, refreshParty]);
+
+  useEffect(() => {
+    if (screen !== "party") partySnapshotRef.current = "";
+  }, [screen]);
 
   useEffect(() => {
     if (screen !== "party") {
@@ -1126,6 +1148,7 @@ export default function App() {
       addedByName: myName,
       position: party?.queue.length || 0,
     });
+    await refreshParty();
     setAdding(false);
     setAddMsg("");
     setPasteOpen(false);
@@ -1192,6 +1215,7 @@ export default function App() {
     setMyWatchingId(vid.id);
     saveSession(code, vid.id);
     await api.playVideo(code, vid.id, me);
+    await refreshParty();
     openVideoLink(vid.url);
   };
   const removeVideo = async (vid) => {
@@ -1201,6 +1225,7 @@ export default function App() {
         setMyWatchingId(null);
         saveSession(code, null);
       }
+      await refreshParty();
       setDeleteConfirm(null);
       showToast("Removed from queue");
     } catch {
@@ -1245,6 +1270,7 @@ export default function App() {
   const kickMember = async (memberId) => {
     try {
       await api.removeMember(code, memberId, me);
+      await refreshParty();
       showToast("User removed");
     } catch {
       showToast("Couldn't remove user");
@@ -1692,7 +1718,7 @@ export default function App() {
 
           {mySpot && (
             <div
-              className="rp-card rp-pop rp-your-spot-banner"
+              className="rp-card rp-pop rp-your-spot-banner rp-ui-hidden"
               onClick={() => playVideo(mySpot)}
               style={{
                 marginTop: 14,
@@ -1737,7 +1763,7 @@ export default function App() {
 
           {nowPlaying && nowPlaying.id !== myWatchingId && (
             <div
-              className="rp-card rp-pop"
+              className="rp-card rp-pop rp-now-playing-banner rp-ui-hidden"
               onClick={() => playVideo(nowPlaying)}
               style={{
                 marginTop: mySpot ? 10 : 14,
@@ -1825,7 +1851,7 @@ export default function App() {
                 >
                   <span className="rp-queue-sort-label">
                     <Filter size={14} aria-hidden />
-                    Filter
+                    Filter:
                   </span>
                   <div className="rp-queue-filter-pills">
                     <button
@@ -1863,7 +1889,7 @@ export default function App() {
                 <div className="rp-queue-sort" role="group" aria-label="Sort queue">
                   <span className="rp-queue-sort-label">
                     <ArrowUpDown size={14} aria-hidden />
-                    Sort
+                    Sort:
                   </span>
                   <div className="rp-queue-sort-pills">
                     {QUEUE_SORTS.map(({ id, label }) => (
@@ -1946,7 +1972,7 @@ export default function App() {
                               aria-hidden="true"
                             />
                           )}
-                          {iWatched && (
+                          {iWatched && !isMySpot && (
                             <div
                               className="rp-watched-shade"
                               aria-hidden="true"

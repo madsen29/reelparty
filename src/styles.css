@@ -540,6 +540,10 @@ body {
   border-color: var(--rp-accent-blue);
   background: var(--rp-your-spot);
 }
+/* Temporarily hidden — remove .rp-ui-hidden to restore */
+.rp-ui-hidden {
+  display: none !important;
+}
 .rp-your-spot-banner-thumb {
   position: relative;
   width: 46px;
