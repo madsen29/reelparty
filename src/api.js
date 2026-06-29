@@ -8,6 +8,7 @@ const mapVideo = (r) => ({
   id: r.id, url: r.url, platform: r.platform, videoId: r.video_id,
   title: r.title, creator: r.creator, thumbnail: r.thumbnail,
   addedById: r.added_by_id, addedByName: r.added_by_name,
+  createdAt: r.created_at || "",
   watchedBy: Array.isArray(r.watched_by) ? r.watched_by : [],
   watchCount: Array.isArray(r.watched_by) ? r.watched_by.length : (r.watched ? 1 : 0),
   reactions: r.reactions && typeof r.reactions === "object" ? r.reactions : {},

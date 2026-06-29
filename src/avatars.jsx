@@ -1,333 +1,401 @@
 const STROKE = "#1a1a22";
 
+// Shared layout: eyes at (17,22) and (31,22), mouth around y=31–33
+const dot = (cx, cy, r = 1.5) => (
+  <circle cx={cx} cy={cy} r={r} fill={STROKE} stroke="none" />
+);
+
 function Face0() {
+  // Classic smile
   return (
     <>
-      <path d="M11 15c2-6 8-8 13-6s9 0 13 6" />
-      <circle cx="17" cy="23" r="1.6" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="23" r="1.6" fill={STROKE} stroke="none" />
-      <path d="M17 31c3 5 11 5 14 0" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 15 Q31 12 35 15" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M17 31 Q24 38 31 31" />
     </>
   );
 }
 
 function Face1() {
+  // Wink
   return (
     <>
-      <path d="M13 17l5 2M30 17l-5 2" />
-      <path d="M15 14l6 1M27 14l-6 1" />
-      <circle cx="17" cy="24" r="1.4" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="24" r="1.4" fill={STROKE} stroke="none" />
-      <path d="M18 33h12" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 15 Q31 12 35 15" />
+      {dot(17, 22)}
+      <path d="M28 22 Q31 22 34 22" />
+      <path d="M17 31 Q24 37 31 31" />
     </>
   );
 }
 
 function Face2() {
+  // Big grin
   return (
     <>
-      <path d="M10 14c3-4 10-5 14-2s8 2 14-2" />
-      <path d="M15 23h6" />
-      <circle cx="31" cy="23" r="1.6" fill={STROKE} stroke="none" />
-      <path d="M17 31c4 4 10 4 14 0" />
+      <path d="M12 14 Q17 11 22 14" />
+      <path d="M26 14 Q31 11 36 14" />
+      {dot(17, 22, 1.6)}
+      {dot(31, 22, 1.6)}
+      <path d="M15 30 Q24 40 33 30" />
     </>
   );
 }
 
 function Face3() {
+  // Laughing — closed happy eyes + open mouth
   return (
     <>
-      <path d="M12 12c2-3 7-4 12-2s8 1 12-2" />
-      <path d="M14 22c2-2 5-2 7 0M27 22c2-2 5-2 7 0" />
-      <path d="M16 28c2 10 14 10 16 0c-2 6-14 6-16 0z" />
+      <path d="M13 21 Q17 17 21 21" />
+      <path d="M27 21 Q31 17 35 21" />
+      <ellipse cx="24" cy="33" rx="5" ry="4" />
     </>
   );
 }
 
 function Face4() {
+  // Surprised
   return (
     <>
-      <path d="M14 13c4-4 16-4 20 0" />
-      <circle cx="18" cy="22" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="30" cy="22" r="1.5" fill={STROKE} stroke="none" />
-      <path d="M18 29c2 5 10 5 12 0" />
-      <path d="M24 29v5" />
-      <path d="M21 34h6" />
+      <path d="M12 13 L17 11 L22 13" />
+      <path d="M26 13 L31 11 L36 13" />
+      {dot(17, 22, 1.8)}
+      {dot(31, 22, 1.8)}
+      <circle cx="24" cy="33" r="3.5" />
     </>
   );
 }
 
 function Face5() {
+  // Cool shades — simple rectangular lenses
   return (
     <>
-      <path d="M13 12h6M29 12h6" />
-      <circle cx="17" cy="21" r="2" fill="none" />
-      <circle cx="31" cy="21" r="2" fill="none" />
-      <circle cx="24" cy="32" r="4" fill="none" />
+      <rect x="11" y="19" width="12" height="5" rx="1.5" fill={STROKE} stroke="none" opacity="0.85" />
+      <rect x="25" y="19" width="12" height="5" rx="1.5" fill={STROKE} stroke="none" opacity="0.85" />
+      <path d="M23 21.5 H25" />
+      <path d="M19 32 Q24 35 29 32" />
     </>
   );
 }
 
 function Face6() {
+  // Sleepy
   return (
     <>
-      <path d="M12 14c3-5 20-5 24 0" />
-      <path d="M15 22c3-3 6-3 8 0M25 22c3-3 6-3 8 0" />
-      <path d="M18 31c3 4 9 4 12 0" />
+      <path d="M13 15 Q17 16 21 15" />
+      <path d="M27 15 Q31 16 35 15" />
+      <path d="M14 22 Q17 24 20 22" />
+      <path d="M28 22 Q31 24 34 22" />
+      <ellipse cx="24" cy="33" rx="4" ry="3" />
     </>
   );
 }
 
 function Face7() {
+  // Tongue out
   return (
     <>
-      <path d="M12 13c4-2 20-2 24 0" />
-      <circle cx="17" cy="22" r="1.4" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="22" r="1.4" fill={STROKE} stroke="none" />
-      <path d="M17 31l3-2 2 2 3-3 2 3 3-2" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 15 Q31 12 35 15" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M18 30 Q24 33 30 30" />
+      <ellipse cx="24" cy="36" rx="3" ry="2.5" fill={STROKE} stroke="none" />
     </>
   );
 }
 
 function Face8() {
+  // Love — heart eyes
   return (
     <>
-      <path d="M13 15c3-5 8-6 11-3M34 15c-3-5-8-6-11-3" />
-      <path d="M16 23h5M27 23h5" />
-      <circle cx="24" cy="32" r="2.5" fill="none" />
+      <path d="M15 20 C15 17 19 17 19 20 C19 17 23 17 23 20 C23 24 19 26 19 26 C19 26 15 24 15 20 Z" fill={STROKE} stroke="none" />
+      <path d="M25 20 C25 17 29 17 29 20 C29 17 33 17 33 20 C33 24 29 26 29 26 C29 26 25 24 25 20 Z" fill={STROKE} stroke="none" />
+      <path d="M17 31 Q24 37 31 31" />
     </>
   );
 }
 
 function Face9() {
+  // Shy blush
   return (
     <>
-      <path d="M11 14c2-4 24-4 26 0" />
-      <path d="M14 22h20" strokeWidth="2.2" />
-      <path d="M20 31c2 4 8 4 10 0" />
+      <path d="M13 15 Q17 14 21 15" />
+      <path d="M27 15 Q31 14 35 15" />
+      {dot(17, 22, 1.3)}
+      {dot(31, 22, 1.3)}
+      <circle cx="12" cy="26" r="2" fill={STROKE} stroke="none" opacity="0.2" />
+      <circle cx="36" cy="26" r="2" fill={STROKE} stroke="none" opacity="0.2" />
+      <path d="M19 32 Q24 35 29 32" />
     </>
   );
 }
 
 function Face10() {
+  // Excited — raised brows + big smile
   return (
     <>
-      <path d="M10 15c4-3 24-3 28 0" />
-      <path d="M14 21l4 4 4-4M26 21l4 4 4-4" />
-      <path d="M16 29c2 9 14 9 16 0" />
+      <path d="M11 12 L17 15 L23 12" />
+      <path d="M25 12 L31 15 L37 12" />
+      {dot(17, 22, 1.6)}
+      {dot(31, 22, 1.6)}
+      <path d="M15 30 Q24 40 33 30" />
     </>
   );
 }
 
 function Face11() {
+  // Worried
   return (
     <>
-      <path d="M12 13c3-2 20-2 24 0" />
-      <path d="M15 22l4-3M33 22l-4-3" />
-      <path d="M18 31h12" />
-      <path d="M20 31v2M24 31v2M28 31v2" />
+      <path d="M13 13 Q17 16 21 13" />
+      <path d="M27 13 Q31 16 35 13" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M18 30 Q21 28 24 30 Q27 32 30 30" />
     </>
   );
 }
 
 function Face12() {
+  // Angry
   return (
     <>
-      <path d="M14 12c2-3 16-3 20 0" />
-      <circle cx="17" cy="22" r="2.5" fill="none" />
-      <circle cx="31" cy="22" r="2.5" fill="none" />
-      <ellipse cx="24" cy="33" rx="5" ry="6" fill="none" />
+      <path d="M13 16 L21 13" />
+      <path d="M35 16 L27 13" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M18 33 Q24 28 30 33" />
     </>
   );
 }
 
 function Face13() {
+  // Crying
   return (
     <>
-      <path d="M12 14c4-4 8-2 12 0s8 2 12 0" />
-      <path d="M14 18l6 4M34 18l-6 4" />
-      <circle cx="17" cy="24" r="1.4" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="24" r="1.4" fill={STROKE} stroke="none" />
-      <path d="M18 34c3-4 9-4 12 0" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 15 Q31 12 35 15" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M16 24 V28" />
+      <path d="M32 24 V28" />
+      <path d="M18 33 Q24 29 30 33" />
     </>
   );
 }
 
 function Face14() {
+  // Skeptical — one brow raised
   return (
     <>
-      <path d="M13 13c3-4 18-4 22 0" />
-      <path d="M15 22h6" />
-      <circle cx="31" cy="22" r="1.5" fill={STROKE} stroke="none" />
-      <path d="M19 31c5 3 10 1 12-2" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 17 Q31 17 35 17" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M19 32 Q24 34 29 31" />
     </>
   );
 }
 
 function Face15() {
+  // Nerd glasses
   return (
     <>
-      <path d="M20 8v8M24 7v10M28 8v8" />
-      <circle cx="17" cy="23" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="23" r="1.5" fill={STROKE} stroke="none" />
-      <path d="M18 32c3 4 9 4 12 0" />
+      <circle cx="17" cy="22" r="4.5" />
+      <circle cx="31" cy="22" r="4.5" />
+      <path d="M21.5 22 H26.5" />
+      <path d="M17 31 Q24 37 31 31" />
     </>
   );
 }
 
 function Face16() {
+  // Sunglasses — filled lenses
   return (
     <>
-      <path d="M10 16c4-2 8-3 12-2M26 14c4-1 8 0 12 2" />
-      <circle cx="17" cy="24" r="1.4" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="24" r="1.4" fill={STROKE} stroke="none" />
-      <path d="M19 30c2 3 8 3 10 0" />
+      <path d="M10 19 Q17 16 24 19 V24 Q17 27 10 24 Z" fill={STROKE} stroke="none" opacity="0.85" />
+      <path d="M24 19 Q31 16 38 19 V24 Q31 27 24 24 Z" fill={STROKE} stroke="none" opacity="0.85" />
+      <path d="M10 19 Q17 16 24 19" />
+      <path d="M24 19 Q31 16 38 19" />
+      <path d="M24 19 V24" />
+      <path d="M18 32 Q24 35 30 32" />
     </>
   );
 }
 
 function Face17() {
+  // Dizzy — spiral eyes
   return (
     <>
-      <path d="M11 16c6-6 20-6 26 0v3H11z" fill={STROKE} stroke="none" opacity="0.15" />
-      <path d="M11 16c6-6 20-6 26 0" />
-      <path d="M15 22c2-2 5-2 7 0M26 22c2-2 5-2 7 0" />
-      <path d="M20 31c2 4 8 4 10 0" />
+      <path d="M17 22 m-3 0 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0" />
+      <path d="M17 22 m-1.5 0 a1.5 1.5 0 1 0 3 0 a1.5 1.5 0 1 0 -3 0" />
+      <path d="M31 22 m-3 0 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0" />
+      <path d="M31 22 m-1.5 0 a1.5 1.5 0 1 0 3 0 a1.5 1.5 0 1 0 -3 0" />
+      <path d="M17 32 Q21 29 24 32 Q27 35 31 32" />
     </>
   );
 }
 
 function Face18() {
+  // X eyes
   return (
     <>
-      <path d="M12 14c3-3 20-3 24 0" />
-      <path d="M15 21c1-2 3-2 4 0 1 2 3 2 4 0M25 21c1-2 3-2 4 0 1 2 3 2 4 0" />
-      <path d="M18 31c3 4 9 4 12 0" />
+      <path d="M14 19 L20 25 M20 19 L14 25" />
+      <path d="M28 19 L34 25 M34 19 L28 25" />
+      <path d="M18 33 Q24 29 30 33" />
     </>
   );
 }
 
 function Face19() {
+  // Cute big eyes
   return (
     <>
-      <path d="M14 12c2-2 16-2 20 0" />
-      <path d="M16 22l2-3 2 3-2 3M28 22l2-3 2 3-2 3" />
-      <path d="M17 30c3 5 11 5 14 0" />
+      <path d="M12 14 Q17 11 22 14" />
+      <path d="M26 14 Q31 11 36 14" />
+      <circle cx="17" cy="22" r="3" fill="none" />
+      {dot(17, 22, 1.2)}
+      <circle cx="31" cy="22" r="3" fill="none" />
+      {dot(31, 22, 1.2)}
+      <path d="M19 32 Q24 35 29 32" />
     </>
   );
 }
 
 function Face20() {
+  // Party — open mouth cheer
   return (
     <>
-      <path d="M12 15c4-3 20-3 24 0" />
-      <path d="M14 23c4 2 6 2 8 0M26 23c4 2 6 2 8 0" />
-      <path d="M20 32h8" />
-      <path d="M22 32c0 2 2 2 2 0" />
+      <path d="M12 13 L17 11 L22 13" />
+      <path d="M26 13 L31 11 L36 13" />
+      {dot(17, 22, 1.6)}
+      {dot(31, 22, 1.6)}
+      <path d="M18 30 Q24 38 30 30" />
+      <path d="M20 30 H28" />
     </>
   );
 }
 
 function Face21() {
+  // Mustache
   return (
     <>
-      <path d="M13 14c3-4 18-4 22 0" />
-      <circle cx="17" cy="22" r="1.4" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="22" r="1.4" fill={STROKE} stroke="none" />
-      <path d="M18 27c2 1 10 1 12 0" />
-      <path d="M17 31c3 4 11 4 14 0" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 15 Q31 12 35 15" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M14 29 Q17 27 20 29 Q24 31 28 29 Q31 27 34 29" />
+      <path d="M20 33 H28" />
     </>
   );
 }
 
 function Face22() {
+  // Cat grin
   return (
     <>
-      <path d="M11 15c3-4 12-5 18-3s8 2 13-1" />
-      <circle cx="17" cy="22" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="22" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="14" cy="27" r="0.8" fill={STROKE} stroke="none" />
-      <circle cx="34" cy="27" r="0.8" fill={STROKE} stroke="none" />
-      <path d="M18 32c3 3 9 3 12 0" />
+      <path d="M11 17 L17 14 L17 20 Z" fill={STROKE} stroke="none" />
+      <path d="M37 17 L31 14 L31 20 Z" fill={STROKE} stroke="none" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M14 30 Q24 42 34 30" />
     </>
   );
 }
 
 function Face23() {
+  // Pout
   return (
     <>
-      <path d="M12 14c2-3 8-4 12-2" />
-      <path d="M30 12c2-2 6 0 8 4" />
-      <circle cx="17" cy="23" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="29" cy="23" r="1.5" fill={STROKE} stroke="none" />
-      <path d="M18 31c3 4 9 4 12 0" />
+      <path d="M13 15 Q17 13 21 15" />
+      <path d="M27 15 Q31 13 35 15" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M21 32 Q24 30 27 32 Q24 35 21 32 Z" fill={STROKE} stroke="none" />
     </>
   );
 }
 
 function Face24() {
+  // Shocked — wide eyes and mouth
   return (
     <>
-      <path d="M14 10v8M18 9v10M30 10v8M34 9v10" />
-      <circle cx="17" cy="23" r="1.4" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="23" r="1.4" fill={STROKE} stroke="none" />
-      <path d="M19 31c3 4 9 4 12 0" />
+      <path d="M11 12 L17 10 L23 12" />
+      <path d="M25 12 L31 10 L37 12" />
+      <circle cx="17" cy="22" r="3.5" fill="none" />
+      {dot(17, 22, 1.2)}
+      <circle cx="31" cy="22" r="3.5" fill="none" />
+      {dot(31, 22, 1.2)}
+      <circle cx="24" cy="33" r="4" fill="none" />
     </>
   );
 }
 
 function Face25() {
+  // Mischief smirk
   return (
     <>
-      <path d="M12 14c3-3 20-3 24 0" />
-      <circle cx="17" cy="23" r="5" />
-      <circle cx="31" cy="23" r="5" />
-      <path d="M18 32c3 3 9 3 12 0" />
+      <path d="M13 14 Q17 11 21 14" />
+      <path d="M27 16 Q31 16 35 16" />
+      {dot(17, 22)}
+      <path d="M28 22 Q31 21 34 22" />
+      <path d="M19 31 Q26 35 31 30" />
     </>
   );
 }
 
 function Face26() {
+  // Peaceful — closed content eyes
   return (
     <>
-      <path d="M13 14c3-3 18-3 22 0" />
-      <circle cx="17" cy="23" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="23" r="5" />
-      <path d="M19 31c3 4 9 4 12 0" />
+      <path d="M13 21 Q17 18 21 21" />
+      <path d="M27 21 Q31 18 35 21" />
+      <path d="M18 31 Q24 35 30 31" />
     </>
   );
 }
 
 function Face27() {
+  // Goofy cross-eyed
   return (
     <>
-      <path d="M18 8l6 8H18z" fill={STROKE} stroke="none" opacity="0.12" />
-      <path d="M18 8l6 8H18z" />
-      <circle cx="17" cy="24" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="24" r="1.5" fill={STROKE} stroke="none" />
-      <path d="M17 32c4 4 10 4 14 0" />
+      <path d="M13 14 Q17 12 21 14" />
+      <path d="M27 14 Q31 12 35 14" />
+      {dot(19, 22)}
+      {dot(29, 22)}
+      <path d="M17 31 Q24 37 31 31" />
     </>
   );
 }
 
 function Face28() {
+  // Hungry — licking lips
   return (
     <>
-      <path d="M12 14l6-6 2 6M36 14l-6-6-2 6" />
-      <circle cx="17" cy="24" r="1.5" fill={STROKE} stroke="none" />
-      <circle cx="31" cy="24" r="1.5" fill={STROKE} stroke="none" />
-      <path d="M18 28c1 4 3 5 6 3 3 2 5-1 6-3" />
+      <path d="M13 15 Q17 12 21 15" />
+      <path d="M27 15 Q31 12 35 15" />
+      {dot(17, 22)}
+      {dot(31, 22)}
+      <path d="M19 30 Q24 34 29 30" />
+      <path d="M26 30 Q28 36 30 30" fill={STROKE} stroke="none" />
     </>
   );
 }
 
 function Face29() {
+  // Chill — relaxed half-lids
   return (
     <>
-      <path d="M12 15c4-4 20-4 24 0" />
-      <path d="M15 22h5M28 22h5" />
-      <path d="M18 29c2 6 10 6 12 0" />
-      <path d="M21 31h2v3h2v-3" />
+      <path d="M13 14 Q17 13 21 14" />
+      <path d="M27 14 Q31 13 35 14" />
+      <path d="M14 21 H20" />
+      <path d="M28 21 H34" />
+      {dot(17, 23, 1.2)}
+      {dot(31, 23, 1.2)}
+      <path d="M19 32 Q24 34 29 32" />
     </>
   );
 }

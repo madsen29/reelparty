@@ -20,6 +20,8 @@ import {
   Copy,
   ClipboardPaste,
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Filter,
 } from "lucide-react";
 import * as api from "./api";
@@ -279,12 +281,15 @@ function reactionCount(reactions) {
 const QUEUE_SORTS = [
   { id: "added", label: "Queue" },
   { id: "platform", label: "Platform" },
-  { id: "reaction", label: "Reaction" },
-  { id: "views", label: "Most Views" },
+  { id: "reaction", label: "Reactions" },
+  { id: "views", label: "Watches" },
 ];
 
-function sortQueue(items, sortBy) {
-  if (!items?.length || sortBy === "added") return items;
+function sortQueue(items, sortBy, dir = "asc") {
+  if (!items?.length) return items;
+  if (sortBy === "added") {
+    return dir === "desc" ? [...items].reverse() : items;
+  }
   const indexed = items.map((v, i) => ({ v, i }));
   indexed.sort((a, b) => {
     let cmp = 0;
@@ -295,14 +300,15 @@ function sortQueue(items, sortBy) {
         );
         break;
       case "reaction":
-        cmp = reactionCount(b.v.reactions) - reactionCount(a.v.reactions);
+        cmp = reactionCount(a.v.reactions) - reactionCount(b.v.reactions);
         break;
       case "views":
-        cmp = (b.v.watchCount || 0) - (a.v.watchCount || 0);
+        cmp = (a.v.watchCount || 0) - (b.v.watchCount || 0);
         break;
     }
     return cmp || a.i - b.i;
   });
+  if (dir === "desc") indexed.reverse();
   return indexed.map(({ v }) => v);
 }
 
@@ -350,6 +356,95 @@ function memberLabel({ name, booted }) {
   return booted ? `${name} (booted)` : name;
 }
 
+function formatAddedDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((startOfToday - startOfDate) / 86400000);
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  if (diffDays === 0) return time;
+  if (diffDays === 1) return `Yesterday, ${time}`;
+  if (d.getFullYear() === now.getFullYear()) {
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+const TAP_MOVE_PX = 10;
+
+function QueuePill({ className, onActivate, pressed, label, children, scrollWhenActive, style }) {
+  const btnRef = useRef(null);
+  const startRef = useRef(null);
+  const onActivateRef = useRef(onActivate);
+  onActivateRef.current = onActivate;
+
+  useEffect(() => {
+    if (!scrollWhenActive || !pressed || !btnRef.current) return;
+    const el = btnRef.current;
+    const run = () => {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(run));
+  }, [scrollWhenActive, pressed, label, className]);
+
+  const onPointerDown = useCallback((e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    startRef.current = {
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+    };
+  }, []);
+
+  const onPointerUp = useCallback((e) => {
+    const start = startRef.current;
+    startRef.current = null;
+    if (!start || start.pointerId !== e.pointerId) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (dx * dx + dy * dy > TAP_MOVE_PX * TAP_MOVE_PX) return;
+    onActivateRef.current(e);
+  }, []);
+
+  const onPointerCancel = useCallback(() => {
+    startRef.current = null;
+  }, []);
+
+  const onKeyDown = useCallback((e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onActivateRef.current(e);
+    }
+  }, []);
+
+  return (
+    <button
+      ref={btnRef}
+      type="button"
+      className={className}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onKeyDown={onKeyDown}
+      aria-pressed={pressed}
+      aria-label={label}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
 function hasActivity(video) {
   return (
     (video.watchCount || 0) > 0 || Object.keys(video.reactions || {}).length > 0
@@ -389,12 +484,12 @@ function PlatformBadge({ platform }) {
     </span>
   );
 }
-function ReactionChips({ reactions, onClick }) {
+function ReactionChips({ reactions, onClick, lg }) {
   const summary = reactionSummary(reactions);
   if (!summary.length) return null;
   return (
     <div
-      className="rp-reaction-chips"
+      className={`rp-reaction-chips${lg ? " rp-reaction-chips--lg" : ""}`}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -498,6 +593,8 @@ function ReactionFan({ x, y, value, onPick, onClose }) {
 }
 const EXPLOSION_PARTICLES = 14;
 const REACTION_BURST_MS = 4200;
+const SPOT_DISMISS_BEAT_MS = 500;
+const SPOT_DISMISS_FADE_MS = 400;
 
 function ReactionBurst({ burstId, emoji, name, color, userId, onDone }) {
   const particles = useRef(
@@ -626,6 +723,54 @@ function Confetti({ go }) {
             width: 7 + Math.random() * 7,
             height: 9 + Math.random() * 9,
             borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const MICRO_CONFETTI_COLS = [
+  "#58CC02",
+  "#1CB0F6",
+  "#FF4B4B",
+  "#FFC800",
+  "#CE82FF",
+  "#FF9600",
+];
+
+function MicroConfetti() {
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 22 }, (_, i) => {
+        const angle = (i / 22) * 360 + Math.random() * 18;
+        const rad = (angle * Math.PI) / 180;
+        const dist = 34 + Math.random() * 42;
+        return {
+          x: Math.cos(rad) * dist,
+          y: Math.sin(rad) * dist,
+          color: MICRO_CONFETTI_COLS[i % MICRO_CONFETTI_COLS.length],
+          size: 4 + Math.random() * 4,
+          round: Math.random() > 0.45,
+          delay: Math.random() * 0.07,
+        };
+      }),
+    [],
+  );
+
+  return (
+    <div className="rp-micro-confetti" aria-hidden>
+      {particles.map((p, i) => (
+        <span
+          key={i}
+          style={{
+            background: p.color,
+            width: p.size,
+            height: p.size * 1.15,
+            borderRadius: p.round ? "50%" : "2px",
+            "--bx": `${p.x}px`,
+            "--by": `${p.y}px`,
+            animationDelay: `${p.delay}s`,
           }}
         />
       ))}
@@ -774,9 +919,200 @@ function Thumb({ v }) {
     </div>
   );
 }
+function SheetHeader({ children, style, className = "" }) {
+  return (
+    <div className={`rp-sheet-header${className ? ` ${className}` : ""}`} style={style}>
+      {children}
+    </div>
+  );
+}
 function Sheet({ children, onClose, panelRef, panelClassName = "" }) {
+  const backdropRef = useRef(null);
+  const panelElRef = useRef(null);
+  const offsetYRef = useRef(0);
+  const dragRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  const mergePanelRef = useCallback(
+    (node) => {
+      panelElRef.current = node;
+      if (!panelRef) return;
+      if (typeof panelRef === "function") panelRef(node);
+      else panelRef.current = node;
+    },
+    [panelRef],
+  );
+
+  const rubberOffset = (dy) => (dy >= 0 ? dy : dy * 0.12);
+
+  const syncVisuals = useCallback((y, { animate = false } = {}) => {
+    offsetYRef.current = y;
+    const panel = panelElRef.current;
+    const backdrop = backdropRef.current;
+    const easing = "cubic-bezier(0.32, 0.72, 0, 1)";
+    const panelTransition = animate ? `transform 0.42s ${easing}` : "none";
+    const backdropTransition = animate ? `opacity 0.42s ${easing}` : "none";
+
+    if (panel) {
+      panel.style.transition = panelTransition;
+      panel.style.transform = `translate3d(0, ${y}px, 0)`;
+    }
+    if (backdrop) {
+      const h = panel?.offsetHeight || window.innerHeight * 0.55;
+      backdrop.style.transition = backdropTransition;
+      backdrop.style.opacity = String(Math.max(0, 1 - y / (h * 0.82)));
+    }
+  }, []);
+
+  const getVelocity = (samples) => {
+    if (!samples || samples.length < 2) return 0;
+    const first = samples[0];
+    const last = samples[samples.length - 1];
+    const dt = last.t - first.t;
+    if (dt <= 0) return 0;
+    return (last.y - first.y) / dt;
+  };
+
+  const finishDrag = useCallback(() => {
+    const d = dragRef.current;
+    const current = offsetYRef.current;
+    const panel = panelElRef.current;
+    const h = panel?.offsetHeight || window.innerHeight;
+    const velocity = d ? getVelocity(d.samples) : 0;
+    const shouldDismiss = current > h * 0.2 || (velocity > 0.35 && current > 12);
+
+    if (shouldDismiss) {
+      setClosing(true);
+      syncVisuals(h, { animate: true });
+      window.setTimeout(onClose, 420);
+    } else {
+      syncVisuals(0, { animate: true });
+    }
+    setDragging(false);
+    dragRef.current = null;
+  }, [onClose, syncVisuals]);
+
+  const dragListenersRef = useRef(null);
+
+  const detachDragListeners = useCallback(() => {
+    const listeners = dragListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.move);
+    window.removeEventListener("pointerup", listeners.up);
+    window.removeEventListener("pointercancel", listeners.up);
+    dragListenersRef.current = null;
+  }, []);
+
+  const attachDragListeners = useCallback(() => {
+    detachDragListeners();
+
+    const onMove = (e) => {
+      const d = dragRef.current;
+      if (!d || d.pointerId !== e.pointerId || closing) return;
+
+      const panel = panelElRef.current;
+      if (!panel) return;
+
+      if (!d.dragging) {
+        const dy = e.clientY - d.startY;
+        if (Math.abs(dy) <= 3) return;
+        if (dy < 0) return;
+        if (d.scrollEl && d.scrollEl.scrollTop > 0) {
+          detachDragListeners();
+          dragRef.current = null;
+          return;
+        }
+        d.dragging = true;
+        d.startOffset = offsetYRef.current;
+        setDragging(true);
+        panel.style.animation = "none";
+      }
+
+      e.preventDefault();
+      const raw = e.clientY - d.startY + (d.startOffset || 0);
+      syncVisuals(rubberOffset(raw));
+      d.samples.push({ y: e.clientY, t: performance.now() });
+      if (d.samples.length > 5) d.samples.shift();
+    };
+
+    const onUp = (e) => {
+      const d = dragRef.current;
+      if (!d || d.pointerId !== e.pointerId) return;
+      detachDragListeners();
+      panelElRef.current?.releasePointerCapture(e.pointerId);
+      if (d.dragging) finishDrag();
+      else dragRef.current = null;
+    };
+
+    dragListenersRef.current = { move: onMove, up: onUp };
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }, [closing, detachDragListeners, finishDrag, syncVisuals]);
+
+  useEffect(() => () => detachDragListeners(), [detachDragListeners]);
+
+  const onPanelPointerDown = (e) => {
+    if (closing || e.button !== 0) return;
+    const panel = panelElRef.current;
+    if (!panel) return;
+
+    const inDragZone = e.target.closest(
+      ".rp-sheet-grab-row, .rp-sheet-handle, .rp-sheet-header",
+    );
+
+    let scrollEl = null;
+    if (!inDragZone) {
+      let el = e.target;
+      while (el && el !== panel) {
+        if (el.scrollHeight > el.clientHeight + 1) {
+          const style = getComputedStyle(el);
+          if (style.overflowY === "auto" || style.overflowY === "scroll") {
+            scrollEl = el;
+            break;
+          }
+        }
+        el = el.parentElement;
+      }
+    }
+
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      startOffset: offsetYRef.current,
+      dragging: inDragZone,
+      scrollEl,
+      samples: [{ y: e.clientY, t: performance.now() }],
+    };
+
+    attachDragListeners();
+    panel.setPointerCapture(e.pointerId);
+
+    if (inDragZone) {
+      panel.style.animation = "none";
+      setDragging(true);
+    }
+  };
+
+  const onPanelPointerUp = (e) => {
+    const listeners = dragListenersRef.current;
+    listeners?.up(e);
+  };
+
+  const onPanelPointerCancel = (e) => {
+    const d = dragRef.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    detachDragListeners();
+    panelElRef.current?.releasePointerCapture(e.pointerId);
+    syncVisuals(0, { animate: true });
+    setDragging(false);
+    dragRef.current = null;
+  };
+
   return (
     <div
+      ref={backdropRef}
       onClick={onClose}
       className="rp-sheet-backdrop"
       style={{
@@ -789,11 +1125,16 @@ function Sheet({ children, onClose, panelRef, panelClassName = "" }) {
       }}
     >
       <div
-        ref={panelRef}
+        ref={mergePanelRef}
         onClick={(e) => e.stopPropagation()}
-        className={`rp-sheet-panel ${panelClassName}`.trim()}
+        onPointerDown={onPanelPointerDown}
+        onPointerUp={onPanelPointerUp}
+        onPointerCancel={onPanelPointerCancel}
+        className={`rp-sheet-panel${dragging ? " rp-sheet-panel--dragging" : ""}${closing ? " rp-sheet-panel--closing" : ""} ${panelClassName}`.trim()}
       >
-        <div className="rp-sheet-handle" />
+        <div className="rp-sheet-grab-row" aria-hidden>
+          <div className="rp-sheet-handle" />
+        </div>
         {children}
       </div>
     </div>
@@ -817,6 +1158,7 @@ export default function App() {
   const [joinCode, setJoinCode] = useState("");
   const [joinErr, setJoinErr] = useState("");
   const [confetti, setConfetti] = useState(false);
+  const [caughtUpBurst, setCaughtUpBurst] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addMsg, setAddMsg] = useState("");
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -833,13 +1175,18 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [activeReactionBursts, setActiveReactionBursts] = useState({});
   const [queueSort, setQueueSort] = useState("added");
+  const [queueSortDir, setQueueSortDir] = useState("asc");
   const [hideWatched, setHideWatched] = useState(false);
   const [filterUserId, setFilterUserId] = useState(null);
   const [filtersHydrated, setFiltersHydrated] = useState(false);
+  const [spotDismissing, setSpotDismissing] = useState(false);
+  const [spotFading, setSpotFading] = useState(false);
   const burstIdRef = useRef(0);
+  const spotDismissTimersRef = useRef([]);
   const prevReactionsRef = useRef({});
   const reactionsInitRef = useRef(false);
   const localReactionAtRef = useRef({});
+  const queueFiltersTouchedRef = useRef(false);
   const clipboardReadRef = useRef(null);
   const pendingShareHandledRef = useRef(false);
   const partySnapshotRef = useRef("");
@@ -1044,11 +1391,14 @@ export default function App() {
   useEffect(() => {
     if (!code || screen !== "party") {
       setFiltersHydrated(false);
+      queueFiltersTouchedRef.current = false;
       return;
     }
     const saved = loadQueueFilters(code);
-    setHideWatched(saved.hideWatched);
-    setFilterUserId(saved.filterUserId);
+    if (!queueFiltersTouchedRef.current) {
+      setHideWatched(saved.hideWatched);
+      setFilterUserId(saved.filterUserId);
+    }
     setFiltersHydrated(true);
   }, [code, screen]);
 
@@ -1085,8 +1435,15 @@ export default function App() {
     return () => document.removeEventListener("visibilitychange", scrollToSpot);
   }, [myWatchingId]);
 
+  useEffect(
+    () => () => {
+      spotDismissTimersRef.current.forEach((id) => clearTimeout(id));
+      spotDismissTimersRef.current = [];
+    },
+    [],
+  );
+
   useEffect(() => {
-    if (!code || screen !== "party") return;
     void refreshParty();
     const poll = setInterval(() => {
       if (document.visibilityState === "visible") void refreshParty();
@@ -1478,11 +1835,55 @@ export default function App() {
         return true;
       })
     : [];
-  const displayedQueue = sortQueue(filteredQueue, queueSort);
+  const displayedQueue = sortQueue(filteredQueue, queueSort, queueSortDir);
+  const queueWithoutSpotPin = party
+    ? party.queue.filter((v) => {
+        if (hideWatched && v.watchedBy?.includes(me)) return false;
+        if (filterUserId && v.addedById !== filterUserId) return false;
+        return true;
+      })
+    : [];
+  const spotPinsQueue =
+    hideWatched &&
+    !!myWatchingId &&
+    queueWithoutSpotPin.length === 0 &&
+    displayedQueue.length === 1 &&
+    displayedQueue[0]?.id === myWatchingId;
+  const dismissMySpot = useCallback(() => {
+    if (spotDismissing) return;
+    setSpotDismissing(true);
+    const beatTimer = window.setTimeout(() => {
+      setSpotFading(true);
+      const fadeTimer = window.setTimeout(() => {
+        setMyWatchingId(null);
+        saveSession(code, null);
+        setSpotDismissing(false);
+        setSpotFading(false);
+        spotDismissTimersRef.current = [];
+      }, SPOT_DISMISS_FADE_MS);
+      spotDismissTimersRef.current = [fadeTimer];
+    }, SPOT_DISMISS_BEAT_MS);
+    spotDismissTimersRef.current = [beatTimer];
+  }, [spotDismissing, code]);
   const filterUser = filterUserId
     ? adders.find((m) => m.id === filterUserId)
     : null;
   const hasActiveFilters = hideWatched || filterUserId;
+  const allCaughtUp =
+    !!party &&
+    party.queue.length > 0 &&
+    displayedQueue.length === 0 &&
+    !filterUserId;
+
+  useEffect(() => {
+    if (!allCaughtUp) {
+      setCaughtUpBurst(false);
+      return;
+    }
+    setCaughtUpBurst(true);
+    const t = window.setTimeout(() => setCaughtUpBurst(false), 900);
+    return () => window.clearTimeout(t);
+  }, [allCaughtUp]);
 
   if (!ready) {
     return (
@@ -1753,7 +2154,7 @@ export default function App() {
               onClick={sharePartyInvite}
               aria-label={`Share invite link for party ${party.code}`}
             >
-              <Share2 size={16} color="var(--rp-accent-blue)" />
+              <Share2 size={16} color="var(--rp-accent-green)" />
               <span className="rp-codebox-code">{party.code}</span>
               <span className="rp-codebox-hint">Invite</span>
             </button>
@@ -1778,55 +2179,59 @@ export default function App() {
           </div>
 
           <div className="rp-members">
-            <button
-              type="button"
-              className="rp-members-toggle"
-              onClick={() => setMembersOpen((open) => !open)}
-              aria-expanded={membersOpen}
+            <div
+              className={`rp-members-pill${membersOpen ? " rp-members-pill--open" : ""}`}
             >
-              <Users size={16} />
-              <span>
-                {party.members.length}{" "}
-                {party.members.length === 1 ? "person" : "in party"}
-              </span>
-              <ChevronDown
-                size={16}
-                className={`rp-members-chevron${membersOpen ? " rp-members-chevron--open" : ""}`}
-              />
-            </button>
-            {membersOpen && (
-              <div className="rp-members-list">
-                {sortedMembers.map((m) => (
-                  <div key={m.id} className="rp-member-chip">
-                    <Avatar id={m.id} name={m.name} sm />
-                    <span style={{ fontWeight: 800, fontSize: 13 }}>
-                      {m.name}
-                    </span>
-                    {m.id === party.hostId && (
-                      <Crown size={13} color="#FFC800" fill="#FFC800" />
-                    )}
-                    {isHost && m.id !== party.hostId && (
-                      <button
-                        onClick={() => kickMember(m.id)}
-                        aria-label={`Remove ${m.name}`}
-                        style={{
-                          display: "flex",
-                          padding: 2,
-                          marginLeft: 2,
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "var(--rp-text-3)",
-                          lineHeight: 0,
-                        }}
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+              <button
+                type="button"
+                className="rp-members-pill-header"
+                onClick={() => setMembersOpen((open) => !open)}
+                aria-expanded={membersOpen}
+              >
+                <Users size={16} />
+                <span>
+                  {party.members.length}{" "}
+                  {party.members.length === 1 ? "person" : "in party"}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`rp-members-chevron${membersOpen ? " rp-members-chevron--open" : ""}`}
+                />
+              </button>
+              {membersOpen && (
+                <div className="rp-members-list">
+                  {sortedMembers.map((m) => (
+                    <div key={m.id} className="rp-member-chip">
+                      <Avatar id={m.id} name={m.name} sm />
+                      <span style={{ fontWeight: 800, fontSize: 13 }}>
+                        {m.name}
+                      </span>
+                      {m.id === party.hostId && (
+                        <Crown size={13} color="#FFC800" fill="#FFC800" />
+                      )}
+                      {isHost && m.id !== party.hostId && (
+                        <button
+                          onClick={() => kickMember(m.id)}
+                          aria-label={`Remove ${m.name}`}
+                          style={{
+                            display: "flex",
+                            padding: 2,
+                            marginLeft: 2,
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "var(--rp-text-3)",
+                            lineHeight: 0,
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {mySpot && (
@@ -1944,19 +2349,37 @@ export default function App() {
           >
             <div className="rp-queue-header">
               <div className="rp-queue-header-top">
-                <h3 className="rp-head" style={{ fontSize: 18 }}>
-                  The Queue
-                </h3>
-                <span
-                  className="rp-subtle"
-                  style={{ fontWeight: 800, fontSize: 13 }}
-                >
-                  {hasActiveFilters && displayedQueue.length < party.queue.length
-                    ? `${displayedQueue.length} of ${party.queue.length} videos`
-                    : `${party.queue.length} video${party.queue.length !== 1 ? "s" : ""}`}
-                </span>
+                <div className="rp-queue-header-title">
+                  <h3 className="rp-head" style={{ fontSize: 18 }}>
+                    The Queue
+                  </h3>
+                  <span className="rp-queue-count rp-subtle">
+                    {hasActiveFilters &&
+                    displayedQueue.length < party.queue.length
+                      ? `${displayedQueue.length} of ${party.queue.length} videos`
+                      : `${party.queue.length} video${party.queue.length !== 1 ? "s" : ""}`}
+                  </span>
+                </div>
+                {party.queue.length > 0 && (
+                  <QueuePill
+                    className={`rp-queue-filter-pill${hideWatched ? " rp-queue-filter-pill--on" : ""}`}
+                    pressed={hideWatched}
+                    label={hideWatched ? "Show watched videos" : "Hide watched videos"}
+                    onActivate={() => {
+                      queueFiltersTouchedRef.current = true;
+                      setHideWatched((on) => !on);
+                    }}
+                  >
+                    {hideWatched ? (
+                      <EyeOff size={14} aria-hidden />
+                    ) : (
+                      <Eye size={14} aria-hidden />
+                    )}
+                    Hide watched
+                  </QueuePill>
+                )}
               </div>
-              {party.queue.length > 0 && (
+              {party.queue.length > 0 && adders.length > 1 && (
                 <div
                   className="rp-queue-filters"
                   role="group"
@@ -1967,34 +2390,27 @@ export default function App() {
                     Filter:
                   </span>
                   <div className="rp-queue-filter-pills">
-                    <button
-                      type="button"
-                      className={`rp-queue-filter-pill${hideWatched ? " rp-queue-filter-pill--on" : ""}`}
-                      onClick={() => setHideWatched((on) => !on)}
-                      aria-pressed={hideWatched}
-                    >
-                      {hideWatched ? (
-                        <EyeOff size={14} aria-hidden />
-                      ) : (
-                        <Eye size={14} aria-hidden />
-                      )}
-                      Hide watched
-                    </button>
-                    {adders.length > 1 &&
-                      adders.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className={`rp-queue-filter-pill rp-queue-filter-pill--user${filterUserId === m.id ? " rp-queue-filter-pill--on" : ""}`}
-                          onClick={() =>
-                            setFilterUserId((id) => (id === m.id ? null : m.id))
-                          }
-                          aria-pressed={filterUserId === m.id}
-                        >
-                          <Avatar id={m.id} name={m.name} sm />
-                          {m.id === me ? "You" : m.name}
-                        </button>
-                      ))}
+                    {adders.map((m) => (
+                      <QueuePill
+                        key={m.id}
+                        scrollWhenActive
+                        className={`rp-queue-filter-pill rp-queue-filter-pill--user${filterUserId === m.id ? " rp-queue-filter-pill--on" : ""}`}
+                        style={
+                          filterUserId === m.id
+                            ? { "--pill-accent": m.color || avatarColorFor(m.id) }
+                            : undefined
+                        }
+                        pressed={filterUserId === m.id}
+                        label={`Filter by ${m.id === me ? "you" : m.name}`}
+                        onActivate={() => {
+                          queueFiltersTouchedRef.current = true;
+                          setFilterUserId((id) => (id === m.id ? null : m.id));
+                        }}
+                      >
+                        <Avatar id={m.id} name={m.name} sm />
+                        {m.id === me ? "You" : m.name}
+                      </QueuePill>
+                    ))}
                   </div>
                 </div>
               )}
@@ -2005,17 +2421,34 @@ export default function App() {
                     Sort:
                   </span>
                   <div className="rp-queue-sort-pills">
-                    {QUEUE_SORTS.map(({ id, label }) => (
-                      <button
+                    {QUEUE_SORTS.map(({ id, label }) => {
+                      const active = queueSort === id;
+                      const SortArrow = queueSortDir === "asc" ? ArrowUp : ArrowDown;
+                      return (
+                      <QueuePill
                         key={id}
-                        type="button"
-                        className={`rp-queue-sort-pill${queueSort === id ? " rp-queue-sort-pill--on" : ""}`}
-                        onClick={() => setQueueSort(id)}
-                        aria-pressed={queueSort === id}
+                        scrollWhenActive
+                        className={`rp-queue-sort-pill${active ? " rp-queue-sort-pill--on" : ""}`}
+                        pressed={active}
+                        label={
+                          active
+                            ? `${label}, sorted ${queueSortDir === "asc" ? "ascending" : "descending"}`
+                            : `Sort by ${label}`
+                        }
+                        onActivate={() => {
+                          if (active) {
+                            setQueueSortDir((d) => (d === "asc" ? "desc" : "asc"));
+                          } else {
+                            setQueueSort(id);
+                            setQueueSortDir("asc");
+                          }
+                        }}
                       >
+                        {active ? <SortArrow size={12} aria-hidden /> : null}
                         {label}
-                      </button>
-                    ))}
+                      </QueuePill>
+                    );
+                    })}
                   </div>
                 </div>
               )}
@@ -2033,11 +2466,12 @@ export default function App() {
               </div>
             ) : displayedQueue.length === 0 ? (
               <div
+                className={`rp-subtle rp-rise${!filterUserId ? " rp-caught-up-wrap" : ""}`}
                 style={{ textAlign: "center", padding: "40px 10px" }}
-                className="rp-subtle"
               >
-                <div style={{ fontSize: 46 }}>
-                  {filterUserId ? "🔍" : "✅"}
+                <div className="rp-caught-up-emoji">
+                  {caughtUpBurst && !filterUserId ? <MicroConfetti /> : null}
+                  {filterUserId ? "🔍" : "🎉"}
                 </div>
                 <p style={{ fontWeight: 800, marginTop: 6 }}>
                   {filterUserId
@@ -2051,23 +2485,33 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              <div className="rp-grid" style={{ paddingBottom: 90 }}>
+              <div
+                className={`rp-grid${spotPinsQueue ? " rp-grid--spot-dismiss" : ""}${spotDismissing ? " rp-grid--spot-dismissing" : ""}`}
+                style={{ paddingBottom: 90 }}
+                onClick={() => {
+                  if (spotPinsQueue && !spotDismissing) dismissMySpot();
+                }}
+              >
                 {displayedQueue.map((v, i) => {
                   const adder = resolveMember(party, v.addedById, v);
                   const isMySpot = v.id === myWatchingId;
+                  const showAsMySpot = isMySpot && !spotDismissing;
                   const iWatched = v.watchedBy?.includes(me);
                   const reactionBurst = activeReactionBursts[v.id];
                   return (
                     <div
                       key={v.id}
                       ref={isMySpot ? mySpotRef : null}
-                      className={`rp-card rp-rise rp-queue-card${isMySpot ? " rp-queue-card--yours" : ""}`}
-                      onClick={() => playVideo(v)}
+                      className={`rp-card rp-rise rp-queue-card${showAsMySpot ? " rp-queue-card--yours" : ""}${spotFading && isMySpot ? " rp-queue-card--dismissing" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playVideo(v);
+                      }}
                       style={{
                         position: "relative",
                         overflow: "hidden",
                         animationDelay: i * 0.03 + "s",
-                        borderColor: isMySpot
+                        borderColor: showAsMySpot
                           ? "var(--rp-accent-blue)"
                           : v.id === party.nowPlayingId
                             ? "var(--rp-accent-purple)"
@@ -2075,17 +2519,17 @@ export default function App() {
                       }}
                     >
                       <div
-                        className={`rp-queue-thumb${isMySpot ? " rp-queue-thumb--yours" : ""}`}
+                        className={`rp-queue-thumb${showAsMySpot ? " rp-queue-thumb--yours" : ""}`}
                       >
                         <div className="rp-queue-thumb-media">
                           <Thumb v={v} />
-                          {isMySpot && (
+                          {showAsMySpot && (
                             <div
                               className="rp-your-spot-shade"
                               aria-hidden="true"
                             />
                           )}
-                          {iWatched && !isMySpot && (
+                          {iWatched && !showAsMySpot && (
                             <div
                               className="rp-watched-shade"
                               aria-hidden="true"
@@ -2197,29 +2641,20 @@ export default function App() {
                             setViewersVideo(v);
                           }}
                         />
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4,
-                            marginTop: 5,
-                          }}
-                        >
+                        <div className="rp-queue-card-adder">
                           {adder.name && (
                             <Avatar id={adder.id} name={adder.name} sm />
                           )}
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              color: "var(--rp-text-2)",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {memberLabel(adder)}
-                          </span>
+                          <div className="rp-queue-card-adder-text">
+                            <span className="rp-queue-card-adder-name">
+                              {memberLabel(adder)}
+                            </span>
+                            {v.createdAt ? (
+                              <span className="rp-queue-card-adder-date">
+                                {formatAddedDate(v.createdAt)}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2247,13 +2682,13 @@ export default function App() {
 
       {inviteOpen && party && (
         <Sheet onClose={() => setInviteOpen(false)}>
-          <div style={{ textAlign: "center" }}>
+          <SheetHeader style={{ textAlign: "center" }}>
             <Share2 size={32} color="var(--rp-accent-blue)" style={{ marginBottom: 8 }} />
             <h3 className="rp-head" style={{ fontSize: 20, margin: "0 0 4px" }}>Invite friends</h3>
             <p className="rp-muted" style={{ fontWeight: 700, fontSize: 13, marginBottom: 20 }}>
               Party code <span style={{ color: "var(--rp-accent-blue-dk)", letterSpacing: 2 }}>{party.code}</span>
             </p>
-          </div>
+          </SheetHeader>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Btn tone="blue" full onClick={copyInviteLink}>
               <Copy size={18} /> COPY LINK
@@ -2268,7 +2703,7 @@ export default function App() {
 
       {deleteConfirm && (
         <Sheet onClose={() => setDeleteConfirm(null)}>
-          <div style={{ textAlign: "center" }}>
+          <SheetHeader style={{ textAlign: "center" }}>
             <Trash2
               size={32}
               color="var(--rp-accent-red)"
@@ -2285,7 +2720,7 @@ export default function App() {
                 ? `Remove "${deleteConfirm.title.slice(0, 40)}${deleteConfirm.title.length > 40 ? "…" : ""}" from the party queue.`
                 : "This video will be removed from the party queue."}
             </p>
-          </div>
+          </SheetHeader>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Btn tone="red" full onClick={confirmDelete}>
               YES, REMOVE
@@ -2299,7 +2734,7 @@ export default function App() {
 
       {unwatchConfirm && (
         <Sheet onClose={() => setUnwatchConfirm(null)}>
-          <div style={{ textAlign: "center" }}>
+          <SheetHeader style={{ textAlign: "center" }}>
             <h3 className="rp-head" style={{ fontSize: 20, margin: "0 0 8px" }}>
               Mark as unwatched?
             </h3>
@@ -2309,7 +2744,7 @@ export default function App() {
             >
               Remove your watched status from this video.
             </p>
-          </div>
+          </SheetHeader>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Btn tone="green" full onClick={confirmUnwatch}>
               YES, MARK UNWATCHED
@@ -2344,30 +2779,19 @@ export default function App() {
 
       {viewersVideo && (
         <Sheet onClose={() => setViewersVideo(null)}>
-          <div style={{ textAlign: "center" }}>
-            <Eye size={32} color="var(--rp-accent-green)" />
-            <h3
-              className="rp-head"
-              style={{ fontSize: 20, margin: "8px 0 2px" }}
-            >
-              Who watched
-            </h3>
-            <p
-              className="rp-muted rp-sheet-video-title"
-              style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}
-            >
+          <SheetHeader className="rp-viewers-sheet-header">
+            <div className="rp-viewers-sheet-head">
+              <Eye size={20} color="var(--rp-accent-green)" aria-hidden />
+              <h3 className="rp-head rp-viewers-sheet-heading">Who watched</h3>
+            </div>
+            <p className="rp-muted rp-sheet-video-title rp-viewers-sheet-title">
               {viewersVideo.title}
             </p>
-          </div>
+          </SheetHeader>
           {reactionSummary(viewersVideo.reactions).length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <p
-                className="rp-subtle"
-                style={{ fontWeight: 800, fontSize: 12, marginBottom: 8 }}
-              >
-                Reactions
-              </p>
-              <ReactionChips reactions={viewersVideo.reactions} />
+            <div className="rp-viewers-sheet-reactions">
+              <p className="rp-viewers-sheet-reactions-label">Reactions</p>
+              <ReactionChips reactions={viewersVideo.reactions} lg />
             </div>
           )}
           <div className="rp-activity-list">
@@ -2424,20 +2848,21 @@ export default function App() {
             setPasteVal("");
           }}
         >
-          <h3 className="rp-head" style={{ fontSize: 20, textAlign: "center" }}>
-            Add a link
-          </h3>
-          <p
-            className="rp-muted"
-            style={{
-              fontWeight: 700,
-              fontSize: 13,
-              textAlign: "center",
-              marginTop: 4,
-            }}
-          >
-            TikTok, Instagram Reels, or YouTube Shorts
-          </p>
+          <SheetHeader style={{ textAlign: "center" }}>
+            <h3 className="rp-head" style={{ fontSize: 20 }}>
+              Add a link
+            </h3>
+            <p
+              className="rp-muted"
+              style={{
+                fontWeight: 700,
+                fontSize: 13,
+                marginTop: 4,
+              }}
+            >
+              TikTok, Instagram Reels, or YouTube Shorts
+            </p>
+          </SheetHeader>
           <div className="rp-paste-form">
             {pasteBusy && (
               <div className="rp-paste-busy">
