@@ -1,0 +1,14 @@
+{
+  "name": "@reelparty/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "lsof -ti:3001 | xargs kill -9 2>/dev/null; node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongodb": "^6.12.0"
+  }
+}

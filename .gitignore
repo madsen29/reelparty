@@ -1,3 +1,37 @@
 node_modules/
 dist/
 .env.local
+.env*.local
+
+# Legacy SQLite dev data
+data/
+
+# Expo / React Native (apps/mobile)
+apps/mobile/.expo/
+apps/mobile/dist/
+apps/mobile/web-build/
+apps/mobile/expo-env.d.ts
+apps/mobile/.kotlin/
+apps/mobile/.metro-health-check*
+apps/mobile/ios/
+apps/mobile/android/
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# typescript
+*.tsbuildinfo
+
+# Native signing artifacts
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
