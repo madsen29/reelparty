@@ -1,37 +1,68 @@
+# Dependencies
 node_modules/
+
+# Package manager artifacts (pnpm is the source of truth)
+package-lock.json
+yarn.lock
+
+# Build outputs
 dist/
-.env.local
-.env*.local
+build/
+out/
+.next/
+
+# Turborepo
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs & debug
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+
+# Deploy
+.vercel
 
 # Legacy SQLite dev data
 data/
 
-# Expo / React Native (apps/mobile)
-apps/mobile/.expo/
-apps/mobile/dist/
-apps/mobile/web-build/
-apps/mobile/expo-env.d.ts
-apps/mobile/.kotlin/
-apps/mobile/.metro-health-check*
+# Expo / React Native
+.expo/
+web-build/
+.metro-health-check*
+.kotlin/
+expo-env.d.ts
+
+# Prebuild native projects (regenerate with `npx expo prebuild`)
 apps/mobile/ios/
 apps/mobile/android/
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
+# macOS / Windows
 .DS_Store
+Thumbs.db
+
+# Signing & keys
 *.pem
-
-# typescript
-*.tsbuildinfo
-
-# Native signing artifacts
-*.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.orig.*
+
+# IDE (local editor state)
+.idea/
+*.swp
+*~

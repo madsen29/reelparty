@@ -1,0 +1,5 @@
+# App-local ignores (monorepo-wide patterns live in the root .gitignore).
+
+.next/
+out/
+.vercel

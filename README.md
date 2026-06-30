@@ -3,82 +3,171 @@
 Watch TikToks, Reels & YouTube Shorts together with friends — build a shared
 queue, react with emojis, and see who watched what.
 
-Monorepo layout:
+A **universal monorepo**: a Next.js web app and an Expo iOS/Android app that
+share ~all of their logic, types, data fetching, validation, and UI.
 
-- `apps/web` — Vite + React web app
-- `apps/mobile` — Expo React Native app (iOS & Android)
-- `packages/api` — Express + MongoDB API shared by web and mobile
+## Architecture
+
+```
+reelparty/
+├─ apps/
+│  ├─ web/      Next.js 15 (App Router, RSC) + react-native-web + NativeWind
+│  └─ mobile/   Expo + Expo Router + React Native + NativeWind
+├─ packages/
+│  ├─ shared/   Types, Zod schemas, pure business logic, storage interface
+│  ├─ api/      tRPC router + MongoDB layer (server) and tRPC client (client)
+│  ├─ ui/       Cross-platform NativeWind components (Button, Card, Avatar, …)
+│  ├─ app/      Shared screens, providers, Solito navigation, platform bridges
+│  └─ config/   Shared ESLint flat config + Tailwind/NativeWind design preset
+└─ turbo.json, pnpm-workspace.yaml, tsconfig.base.json
+```
+
+**What's shared vs. platform-specific**
+
+- Shared: every screen, the tRPC API + client, TanStack Query setup, Zod
+  validation, business logic (reactions, queue sorting, avatars), navigation
+  intent (`useAppNavigation` via Solito), and styling tokens.
+- Web-only: Next.js routing, RSC SEO/invite metadata + Open Graph image route,
+  the tRPC HTTP handler, and the localStorage/Web-Share platform bridge.
+- Native-only: Expo Router file routes, font loading, and the
+  AsyncStorage/Expo-clipboard/Share platform bridge.
+
+Platform differences are injected at the root via an `AppProvider` that takes a
+`PlatformBridge` and a `KeyValueStore`, so the shared screens stay identical.
+
+## Tech
+
+- **Monorepo:** pnpm workspaces + Turborepo
+- **Web:** Next.js 15 App Router, React Server Components, react-native-web
+- **Mobile:** Expo SDK 56, Expo Router, React Native (New Architecture)
+- **Styling:** NativeWind v4 (Tailwind) with a shared design preset
+- **API:** tRPC v11 + MongoDB, end-to-end typed; TanStack Query for data
+- **Navigation:** Solito (one route map for both platforms)
+- **Quality:** TypeScript (strict), ESLint (flat), Prettier, Conventional Commits
 
 ## Prerequisites
 
-- Node 18+
+- Node 20+ and `pnpm` 9 (`corepack enable`)
 - MongoDB (default `mongodb://127.0.0.1:27017`)
-- For mobile: [Expo Go](https://expo.dev/go) on your phone, or an iOS Simulator /
-  Android Emulator
+- For mobile: [Expo Go](https://expo.dev/go) or an iOS Simulator / Android Emulator
 
 ## Install
 
 ```bash
-npm install
+pnpm install
 ```
+
+## Configuration
+
+| Variable                | Used by | Purpose                                                |
+| ----------------------- | ------- | ------------------------------------------------------ |
+| `MONGODB_URI`           | web     | Mongo connection string (default local)                |
+| `MONGODB_DB`            | web     | Database name (default `reelparty`)                    |
+| `NEXT_PUBLIC_API_URL`   | web     | tRPC origin; empty = same origin (`/api/trpc`)         |
+| `NEXT_PUBLIC_WEB_ORIGIN`| web     | Absolute origin for OG/invite metadata                 |
+| `EXPO_PUBLIC_API_URL`   | mobile  | tRPC origin (the running web app), e.g. `http://IP:3000` |
+| `EXPO_PUBLIC_WEB_ORIGIN`| mobile  | Origin used to build shareable invite links            |
+
+The API now lives **inside the web app** as tRPC route handlers
+(`apps/web/app/api/trpc/[trpc]`), so running the web app also serves the API for
+mobile.
 
 ## Development
 
-### Web + API (typical local setup)
+Run web + mobile together (Turbo TUI — keyboard input goes to the focused task):
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Opens the web app at http://localhost:5173. The API listens on port 3001 and is
-proxied through Vite at `/api`.
+In the Turbo terminal UI, use **↑/↓** to focus a task pane, then use that app's
+shortcuts (e.g. **`i`** opens the iOS simulator when the **mobile** pane is
+focused). Press **`m`** in the mobile pane for the full Expo dev menu.
 
-Data is stored in the `reelparty` MongoDB database. Override with `MONGODB_URI`
-and `MONGODB_DB` when starting the API.
-
-### Individual workspaces
+Or run one app directly (full terminal control, no Turbo UI):
 
 ```bash
-npm run dev:api      # API only (port 3001)
-npm run dev:web      # Vite dev server only
-npm run dev:mobile   # Expo dev server
+pnpm dev:web      # Next.js at http://localhost:3000 (serves /api/trpc too)
+pnpm dev:mobile   # Expo dev server — `i` / `a` / `r` work immediately
 ```
 
-### Mobile on a physical device
+### Mobile pointing at your machine
 
-The phone cannot reach `localhost` on your computer. Start the API (via
-`npm run dev` or `npm run dev:api`), then point the mobile app at your LAN IP:
+The mobile app talks to the web app's tRPC API. By default it auto-detects the
+Metro host and uses `http://<your-LAN-ip>:3000`. To be explicit (recommended on
+a physical device):
 
 ```bash
-EXPO_PUBLIC_API_URL="http://192.168.1.20:3001" npm run dev:mobile
+# 1) start the web app (which hosts the API)
+pnpm dev:web
+# 2) in another shell, start mobile pointed at your machine
+EXPO_PUBLIC_API_URL="http://192.168.1.20:3000" pnpm dev:mobile
 ```
 
-Defaults if `EXPO_PUBLIC_API_URL` is unset:
-
-- iOS Simulator: `http://localhost:3001`
-- Android Emulator: `http://10.0.2.2:3001`
-
-Set `EXPO_PUBLIC_WEB_ORIGIN` for invite links shared with friends (e.g.
-`https://reelparty.app`).
-
-## Play with friends on the same Wi-Fi
-
-When you run `npm run dev`, Vite prints a "Network:" URL like
-`http://192.168.1.x:5173`. Share that with friends on the same network. They
-open it, tap Join, enter your code.
-
-## Build
+## Quality scripts
 
 ```bash
-npm run build
+pnpm typecheck   # tsc --noEmit across every package
+pnpm lint        # eslint across every package
+pnpm format      # prettier --write
+pnpm build       # turbo build (currently the Next.js web app)
 ```
+
+## Deployment
+
+- **Web → Vercel:** set the project root to `apps/web`. Vercel detects Next.js;
+  set `MONGODB_URI`, `MONGODB_DB`, and `NEXT_PUBLIC_WEB_ORIGIN`.
+- **Mobile → Expo EAS:** from `apps/mobile`, run `eas build` (configure your EAS
+  project first) and set `EXPO_PUBLIC_API_URL` / `EXPO_PUBLIC_WEB_ORIGIN` to your
+  deployed web origin.
+
+## Working in the monorepo
+
+### Add shared code
+
+Put cross-platform logic/types in `packages/shared`, API procedures in
+`packages/api`, reusable visual components in `packages/ui`, and full screens or
+providers in `packages/app`. Export new modules from each package's
+`src/index.ts`. Imports use the package name, e.g.:
+
+```ts
+import { sortQueue } from "@reelparty/shared";
+import { trpc } from "@reelparty/api";
+import { Button, Card } from "@reelparty/ui";
+import { PartyScreen, useAppNavigation } from "@reelparty/app";
+```
+
+### Platform-specific files
+
+When a single component needs different web vs. native implementations, use
+platform extensions — Metro and the Next webpack config resolve them
+automatically:
+
+```
+MyThing.tsx          # shared default
+MyThing.web.tsx      # web override (react-native-web / DOM)
+MyThing.native.tsx   # iOS + Android override
+MyThing.ios.tsx      # iOS only (optional)
+MyThing.android.tsx  # Android only (optional)
+```
+
+Prefer keeping logic shared and pushing only the differing piece behind a
+platform file or the `PlatformBridge`.
+
+### Add a screen / route
+
+1. Build the screen in `packages/app/src/features/...` and export it.
+2. Add the web route in `apps/web/app/...` (a thin `"use client"` wrapper or an
+   RSC page for SEO).
+3. Add the matching Expo Router file in `apps/mobile/app/...`.
+4. Add navigation helpers to `useAppNavigation` so both platforms share intent.
 
 ## Notes
 
-- Web and mobile clients share one API and one MongoDB database.
-- Clipboard auto-read works on localhost/HTTPS. Over a LAN IP it is blocked, so
-  guests use the paste sheet.
+- Web and mobile share one tRPC API and one MongoDB database.
+- Clipboard auto-read works on localhost/HTTPS; over a plain LAN IP browsers
+  block it, so guests use the paste sheet.
 - YouTube Shorts fetch real metadata and play embedded. TikTok/Reels show
   platform cards (in-app playback needs each platform's SDK).
-- Mobile invite links use the `reelparty://` scheme plus a web URL
-  (`EXPO_PUBLIC_WEB_ORIGIN`) for friends without the app.
+- Invite links resolve to `/join/<code>`, which is an RSC page on web with full
+  Open Graph metadata and a generated share image at `/api/og/<code>.svg`.

@@ -1,0 +1,76 @@
+"use client";
+
+import { useState } from "react";
+import { View } from "react-native";
+import { trpc } from "@reelparty/api";
+import { code5 } from "@reelparty/shared";
+import { Button, ButtonText, Heading, Muted, Screen, Text } from "@reelparty/ui";
+import { useUserId } from "../../hooks/useUserId";
+import { useAppNavigation } from "../../navigation/useAppNavigation";
+import { useToast } from "../../provider";
+import { BackBar } from "../../components/BackBar";
+import { Input } from "../../components/Input";
+
+export function CreateScreen() {
+  const me = useUserId();
+  const nav = useAppNavigation();
+  const toast = useToast();
+  const utils = trpc.useUtils();
+  const createMut = trpc.party.create.useMutation();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const create = async () => {
+    if (!me || busy) return;
+    setBusy(true);
+    try {
+      let code = code5();
+      for (let i = 0; i < 5; i++) {
+        const existing = await utils.party.get.fetch({ code });
+        if (!existing) break;
+        code = code5();
+      }
+      await createMut.mutateAsync({
+        code,
+        hostId: me,
+        hostName: name.trim() || "Host",
+      });
+      nav.goParty(code);
+    } catch {
+      toast("Couldn't create the party");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Screen>
+      <BackBar onBack={nav.back} />
+      <View className="mt-8 items-center">
+        <Text style={{ fontSize: 56 }}>👑</Text>
+        <Heading className="mt-2" style={{ fontSize: 26, color: "#58cc02" }}>
+          You&apos;re the host!
+        </Heading>
+        <Muted>What should we call you?</Muted>
+      </View>
+      <Input
+        className="mt-6"
+        placeholder="Your name"
+        maxLength={16}
+        value={name}
+        onChangeText={setName}
+        autoFocus
+        returnKeyType="go"
+        onSubmitEditing={create}
+      />
+      <View className="flex-1" />
+      <Button
+        tone="green"
+        full
+        disabled={!name.trim() || busy}
+        onPress={create}
+      >
+        <ButtonText>LET&apos;S GO 🚀</ButtonText>
+      </Button>
+    </Screen>
+  );
+}

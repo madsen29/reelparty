@@ -1,0 +1,114 @@
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #0a0a0f;
+  color: #ececf1;
+  font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+@keyframes sheetFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheetSlideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.rp-sheet-backdrop {
+  animation: sheetFadeIn 0.32s ease both;
+}
+
+.rp-sheet-backdrop--closing {
+  animation: sheetFadeOut 0.32s ease forwards;
+  pointer-events: none;
+}
+
+.rp-sheet-panel {
+  position: relative;
+  animation: sheetSlideUp 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+  will-change: transform;
+  touch-action: pan-x pan-down;
+  backface-visibility: hidden;
+}
+
+/* Hide the gap when rubber-banding the sheet upward. */
+.rp-sheet-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 100vh;
+  background-color: #1c1c26;
+  pointer-events: none;
+}
+
+.rp-sheet-panel--exit {
+  animation: sheetSlideDown 0.42s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.rp-sheet-panel--dragging {
+  animation: none !important;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rp-sheet-grab-row {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rp-sheet-panel--dragging .rp-sheet-grab-row,
+.rp-sheet-panel--dragging [data-sheet-header] {
+  cursor: grabbing;
+}
+
+[data-sheet-header] {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}

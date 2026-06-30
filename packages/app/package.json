@@ -1,0 +1,53 @@
+{
+  "name": "@reelparty/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./features/*": "./src/features/*",
+    "./provider": "./src/provider/index.tsx",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@reelparty/api": "workspace:*",
+    "@reelparty/shared": "workspace:*",
+    "@reelparty/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "*",
+    "@trpc/client": "*",
+    "@trpc/react-query": "*",
+    "expo-router": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-gesture-handler": "*",
+    "react-native-reanimated": "*",
+    "react-native-safe-area-context": "*",
+    "solito": "*"
+  },
+  "devDependencies": {
+    "@reelparty/config": "workspace:*",
+    "@tanstack/react-query": "^5.62.7",
+    "@trpc/client": "^11.0.0",
+    "@trpc/react-query": "^11.0.0",
+    "@types/react": "~19.2.0",
+    "eslint": "^9.17.0",
+    "expo-router": "~56.2.11",
+    "nativewind": "^4.1.23",
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-gesture-handler": "~2.31.2",
+    "react-native-reanimated": "~4.3.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "solito": "^4.2.2",
+    "typescript": "^5.7.2"
+  }
+}
